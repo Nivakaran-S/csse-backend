@@ -91,9 +91,13 @@ const getCoverageStatus = async (req, res) => {
       .sort({ applicationDate: -1 });
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: 'No coverage application found'
+      // Return success with None status instead of 404
+      return res.status(200).json({
+        success: true,
+        data: {
+          status: 'None',
+          message: 'No coverage application found. Please apply for coverage.'
+        }
       });
     }
 
