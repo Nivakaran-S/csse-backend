@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 // ============================================
-// CASH PAYMENT RECEIPT MODEL
+// COVERAGE APPLICATION MODEL
 // ============================================
 
-const CashPaymentReceiptSchema = new Schema({
+const CoverageApplicationSchema = new Schema({
   userId: { 
     type: Schema.Types.ObjectId, 
     ref: 'User', 
@@ -15,75 +15,42 @@ const CashPaymentReceiptSchema = new Schema({
     type: String, 
     required: true 
   },
-  patientId: { 
-    type: String, 
-    required: true 
-  },
   patientEmail: { 
     type: String, 
     required: true 
   },
-  patientPhone: { 
+  policyId: { 
     type: String, 
     required: true 
   },
-  amount: { 
-    type: Number, 
-    required: true 
-  },
-  depositReference: { 
+  provider: { 
     type: String, 
     required: true 
   },
-  bankName: { 
+  coverageType: { 
     type: String, 
-    required: true 
-  },
-  branchName: { 
-    type: String, 
-    required: true 
-  },
-  depositDate: { 
-    type: Date, 
-    required: true 
-  },
-  transactionId: { 
-    type: String, 
-    required: true 
-  },
-  receiptNumber: { 
-    type: String, 
-    required: true, 
-    unique: true 
-  },
-  notes: { 
-    type: String 
-  },
-  paymentSlipUrl: { 
-    type: String 
+    required: true,
+    enum: ['Full', 'Partial', 'Emergency Only', 'Dental', 'Vision']
   },
   status: { 
     type: String, 
-    enum: ['Pending', 'Approved', 'Declined', 'Under Review'], 
+    enum: ['Pending', 'Approved', 'Declined'], 
     default: 'Pending' 
   },
   adminNotes: { 
     type: String 
   },
-  submittedAt: { 
+  applicationDate: { 
     type: Date, 
     default: Date.now 
   },
-  reviewedAt: { 
-    type: Date 
-  },
-  reviewedBy: { 
+  approvedBy: { 
     type: Schema.Types.ObjectId, 
     ref: 'User' 
+  },
+  approvedDate: { 
+    type: Date 
   }
 });
 
-// Create and export the model
-const CashPaymentReceipt = mongoose.model('CashPaymentReceipt', CashPaymentReceiptSchema);
-
-module.exports = CashPaymentReceipt;
+module.exports = mongoose.model('CoverageApplication', CoverageApplicationSchema);
