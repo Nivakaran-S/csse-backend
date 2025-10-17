@@ -5,7 +5,8 @@ const {
   getAllAppointments, 
   getAppointmentsByPatient,
   getAppointmentsByEmail,  // Optional backup route
-  getAppointmentsByDoctor
+  getAppointmentsByDoctor,
+  getAppointmentsByDoctorAndDate  // NEW: Add this
 } = require('../controllers/appointment.controller');
 
 // Note: Routes are prefixed with /api/appointment in app.js
@@ -24,5 +25,8 @@ router.get('/patient/email/:email', getAppointmentsByEmail);
 
 // Get appointments by doctor ID
 router.get('/doctor/:doctorId', getAppointmentsByDoctor);
+
+// NEW: Get appointments by doctor ID and specific date
+router.get('/doctor/:doctorId/date/:date', getAppointmentsByDoctorAndDate);
 
 module.exports = router;

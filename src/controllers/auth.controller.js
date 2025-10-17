@@ -1,4 +1,4 @@
-// src/controllers/auth.controller.js - FIXED LOGIN
+// src/controllers/auth.controller.js - CORRECTED VERSION
 
 const User = require('../models/users.model');
 const Patient = require('../models/patient.model');
@@ -10,19 +10,20 @@ const jwt = require('jsonwebtoken');
 // ==================== UNIFIED LOGIN ====================
 const login = async (req, res) => {
   try {
-    const { userName, password } = req.body; // Keep as userName for backward compatibility
+    const { userName, password } = req.body;
 
     // Validation
     if (!userName || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    // Normalize input
+    // Normalize input and trim password
     const normalizedInput = userName.toLowerCase().trim();
+    const trimmedPassword = password.trim();
 
     console.log("Login attempt for:", normalizedInput);
 
-    // Find user by userName (case-insensitive) - this works with existing data
+    // Find user by userName (case-insensitive)
     const user = await User.findOne({ 
       userName: { $regex: new RegExp(`^${normalizedInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
@@ -34,13 +35,11 @@ const login = async (req, res) => {
 
     console.log('User found:', { id: user._id, role: user.role, userName: user.userName });
 
-    // Verify password - THE MOST COMMON ISSUE
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Verify password with trimmed input
+    const isMatch = await bcrypt.compare(trimmedPassword, user.password);
 
     if (!isMatch) {
       console.log('Password mismatch for user:', normalizedInput);
-      console.log('Stored hash:', user.password);
-      console.log('Input password length:', password.length);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
@@ -99,7 +98,7 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000  // 24 hours
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     console.log('Login successful for:', normalizedInput);
@@ -141,8 +140,9 @@ const httpRegisterPatient = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Trim and validate password
+    const trimmedPassword = password.trim();
+    if (trimmedPassword.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
 
@@ -151,7 +151,7 @@ const httpRegisterPatient = async (req, res) => {
 
     // Check if email already exists in Patient
     const existingPatient = await Patient.findOne({ 
-      email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') }
+      email: { $regex: new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     if (existingPatient) {
       return res.status(409).json({ message: 'Patient with this email already exists' });
@@ -162,7 +162,7 @@ const httpRegisterPatient = async (req, res) => {
 
     // Check if userName already exists in User
     const existingUser = await User.findOne({ 
-      userName: { $regex: new RegExp(`^${userNameToUse}$`, 'i') }
+      userName: { $regex: new RegExp(`^${userNameToUse.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     if (existingUser) {
       return res.status(409).json({ message: 'User account with this email already exists' });
@@ -170,17 +170,17 @@ const httpRegisterPatient = async (req, res) => {
 
     // Create Patient record first
     const patient = new Patient({
-      firstName,
-      lastName,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       email: normalizedEmail,
-      phoneNumber,
+      phoneNumber: phoneNumber.trim(),
       gender
     });
     await patient.save();
     console.log('Patient created with ID:', patient._id);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash trimmed password
+    const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
 
     // Create User account
     const user = new User({
@@ -246,8 +246,9 @@ const httpRegisterDoctor = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Trim and validate password
+    const trimmedPassword = password.trim();
+    if (trimmedPassword.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
 
@@ -256,7 +257,7 @@ const httpRegisterDoctor = async (req, res) => {
 
     // Check if email already exists in Doctor
     const existingDoctor = await Doctor.findOne({ 
-      email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') }
+      email: { $regex: new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     if (existingDoctor) {
       return res.status(409).json({ message: 'Doctor with this email already exists' });
@@ -267,7 +268,7 @@ const httpRegisterDoctor = async (req, res) => {
 
     // Check if userName already exists in User
     const existingUser = await User.findOne({ 
-      userName: { $regex: new RegExp(`^${userNameToUse}$`, 'i') }
+      userName: { $regex: new RegExp(`^${userNameToUse.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     if (existingUser) {
       return res.status(409).json({ message: 'User account with this email already exists' });
@@ -281,10 +282,10 @@ const httpRegisterDoctor = async (req, res) => {
 
     // Create Doctor record first
     const doctor = new Doctor({
-      firstName,
-      lastName,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       email: normalizedEmail,
-      phoneNumber,
+      phoneNumber: phoneNumber.trim(),
       gender,
       doctorId,
       department,
@@ -296,8 +297,8 @@ const httpRegisterDoctor = async (req, res) => {
     await doctor.save();
     console.log('Doctor created with ID:', doctor._id);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash trimmed password
+    const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
 
     // Create User account
     const user = new User({
@@ -353,8 +354,9 @@ const httpRegisterAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Trim and validate password
+    const trimmedPassword = password.trim();
+    if (trimmedPassword.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
 
@@ -363,7 +365,7 @@ const httpRegisterAdmin = async (req, res) => {
 
     // Check if email already exists in Admin
     const existingAdmin = await Admin.findOne({ 
-      email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') }
+      email: { $regex: new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     if (existingAdmin) {
       return res.status(409).json({ message: 'Admin with this email already exists' });
@@ -374,7 +376,7 @@ const httpRegisterAdmin = async (req, res) => {
 
     // Check if userName already exists in User
     const existingUser = await User.findOne({ 
-      userName: { $regex: new RegExp(`^${userNameToUse}$`, 'i') }
+      userName: { $regex: new RegExp(`^${userNameToUse.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     if (existingUser) {
       return res.status(409).json({ message: 'User account with this email already exists' });
@@ -382,10 +384,10 @@ const httpRegisterAdmin = async (req, res) => {
 
     // Create Admin record first
     const admin = new Admin({
-      firstName,
-      lastName,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       email: normalizedEmail,
-      phoneNumber,
+      phoneNumber: phoneNumber.trim(),
       position: position || 'Healthcare Manager',
       permissions: permissions || ['schedule_staff', 'manage_staff', 'view_reports', 'manage_departments'],
       isActive: true
@@ -393,8 +395,8 @@ const httpRegisterAdmin = async (req, res) => {
     await admin.save();
     console.log('Admin created with ID:', admin._id);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash trimmed password
+    const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
 
     // Create User account
     const user = new User({
@@ -443,10 +445,10 @@ const httpUpdatePatient = async (req, res) => {
       return res.status(404).json({ message: 'Patient record not found' });
     }
 
-    if (firstName) patient.firstName = firstName;
-    if (lastName) patient.lastName = lastName;
+    if (firstName) patient.firstName = firstName.trim();
+    if (lastName) patient.lastName = lastName.trim();
     if (email) patient.email = email.toLowerCase().trim();
-    if (phoneNumber) patient.phoneNumber = phoneNumber;
+    if (phoneNumber) patient.phoneNumber = phoneNumber.trim();
     if (gender) patient.gender = gender;
 
     await patient.save();
@@ -454,8 +456,14 @@ const httpUpdatePatient = async (req, res) => {
     // Update User record
     if (userName) patientUser.userName = userName.toLowerCase().trim();
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      patientUser.password = hashedPassword;
+      const trimmedPassword = password.trim();
+      // Only hash if it's NOT already a bcrypt hash
+      if (!trimmedPassword.startsWith('$2a$') && !trimmedPassword.startsWith('$2b$')) {
+        const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
+        patientUser.password = hashedPassword;
+      } else {
+        console.warn('Attempted to rehash an already hashed password');
+      }
     }
 
     await patientUser.save();
@@ -508,10 +516,10 @@ const httpUpdateDoctor = async (req, res) => {
       return res.status(404).json({ message: 'Doctor record not found' });
     }
 
-    if (firstName) doctor.firstName = firstName;
-    if (lastName) doctor.lastName = lastName;
+    if (firstName) doctor.firstName = firstName.trim();
+    if (lastName) doctor.lastName = lastName.trim();
     if (email) doctor.email = email.toLowerCase().trim();
-    if (phoneNumber) doctor.phoneNumber = phoneNumber;
+    if (phoneNumber) doctor.phoneNumber = phoneNumber.trim();
     if (gender) doctor.gender = gender;
     if (department) doctor.department = department;
     if (specialization) doctor.specialization = specialization;
@@ -523,8 +531,14 @@ const httpUpdateDoctor = async (req, res) => {
     // Update User record
     if (userName) doctorUser.userName = userName.toLowerCase().trim();
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      doctorUser.password = hashedPassword;
+      const trimmedPassword = password.trim();
+      // Only hash if it's NOT already a bcrypt hash
+      if (!trimmedPassword.startsWith('$2a$') && !trimmedPassword.startsWith('$2b$')) {
+        const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
+        doctorUser.password = hashedPassword;
+      } else {
+        console.warn('Attempted to rehash an already hashed password');
+      }
     }
 
     await doctorUser.save();
@@ -575,10 +589,10 @@ const httpUpdateAdmin = async (req, res) => {
       return res.status(404).json({ message: 'Admin record not found' });
     }
 
-    if (firstName) admin.firstName = firstName;
-    if (lastName) admin.lastName = lastName;
+    if (firstName) admin.firstName = firstName.trim();
+    if (lastName) admin.lastName = lastName.trim();
     if (email) admin.email = email.toLowerCase().trim();
-    if (phoneNumber) admin.phoneNumber = phoneNumber;
+    if (phoneNumber) admin.phoneNumber = phoneNumber.trim();
     if (position) admin.position = position;
     if (permissions) admin.permissions = permissions;
 
@@ -587,8 +601,14 @@ const httpUpdateAdmin = async (req, res) => {
     // Update User record
     if (userName) adminUser.userName = userName.toLowerCase().trim();
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      adminUser.password = hashedPassword;
+      const trimmedPassword = password.trim();
+      // Only hash if it's NOT already a bcrypt hash
+      if (!trimmedPassword.startsWith('$2a$') && !trimmedPassword.startsWith('$2b$')) {
+        const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
+        adminUser.password = hashedPassword;
+      } else {
+        console.warn('Attempted to rehash an already hashed password');
+      }
     }
 
     await adminUser.save();

@@ -126,3 +126,54 @@ exports.getAppointmentsByDoctor = async (req, res) => {
     res.status(500).json({ error: 'Server error while fetching appointments.' });
   }
 };
+
+// NEW: Get appointments by doctor and specific date
+exports.getAppointmentsByDoctorAndDate = async (req, res) => {
+  try {
+    const { doctorId, date } = req.params;
+
+    // Validation
+    if (!doctorId) {
+      return res.status(400).json({ error: 'Doctor ID is required.' });
+    }
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date is required.' });
+    }
+
+    // Parse and validate date
+    const targetDate = new Date(date);
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format. Please use YYYY-MM-DD format.' });
+    }
+
+    // Create start and end of day to match all appointments on that date
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Find appointments for the specific doctor and date
+    const appointments = await Appointment.find({
+      doctorId: doctorId,
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      }
+    }).sort({ timeSlot: 1 });
+
+    res.status(200).json({ 
+      appointments,
+      doctorId,
+      date: date,
+      count: appointments.length
+    });
+
+  } catch (err) {
+    console.error('Error fetching appointments by doctor and date:', err);
+    res.status(500).json({ 
+      error: 'Server error while fetching appointments.' 
+    });
+  }
+};
