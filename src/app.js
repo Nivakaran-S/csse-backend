@@ -58,7 +58,7 @@ app.use('/api/department', departmentRouter);
 app.use('/api/staff', staffRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api/doctor', doctorRouter); // ✅ ADDED
+app.use('/api/doctor', doctorRouter);
 app.use('/api/diagnosis', diagnosisRouter);
 
 // Auth helpers (root level)
