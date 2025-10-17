@@ -13,6 +13,10 @@ const adminRouter = require('./router/admin.router');
  
 const diagnosisRouter = require('./router/diagnosis.router');
 
+const paymentRouter = require('./router/payment.router');
+const coverageRouter = require('./router/coverage.router');
+const cashPaymentReceiptRouter = require('./router/cashPaymentReceipt.router');
+
 const app = express();
 
 app.use(express.json());
